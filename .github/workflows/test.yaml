@@ -8,6 +8,6 @@ jobs:
     name: Update Flows
     steps:
     - name: Update flowzzz
-      uses: hacksore/node-red-update-flow@v1
+      uses: hacksore/node-red-update-flow@v2
       with:
         repo: 'node-red-contrib-bluelinky'
