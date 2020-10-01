@@ -9,6 +9,6 @@ jobs:
     steps:
     - name: Update flow
       id: hello
-      uses: Hacksore/node-red-update-flow
+      uses: hacksore/node-red-update-flow@v1
       with:
         repo: 'node-red-contrib-bluelinky'
