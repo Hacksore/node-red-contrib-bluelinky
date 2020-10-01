@@ -1,0 +1,14 @@
+name: Test New Actions
+
+on: 'push'
+
+jobs:
+  update-flow:
+    runs-on: ubuntu-latest
+    name: Update Flows
+    steps:
+    - name: Update flow
+      id: hello
+      uses: Hacksore/node-red-update-flow
+      with:
+        repo: 'node-red-contrib-bluelinky'
