@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Update Flows
     steps:
-    - name: Update flowzzz
-      uses: hacksore/node-red-update-flow@v2
+    - name: Update flowz
+      uses: hacksore/node-red-flow@v2
       with:
         repo: 'node-red-contrib-bluelinky'
