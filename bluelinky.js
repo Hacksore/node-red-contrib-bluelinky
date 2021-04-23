@@ -2,9 +2,42 @@ const BlueLinky = require('bluelinky');
 const EventEmitter = require('events');
 
 const State = new EventEmitter();
+
+/**
+ * Interacts with the BlueLink API
+ *
+ * @type {BlueLinky.default}
+ */
 let client;
 
 module.exports = function (RED) {
+
+  /**
+   * 
+   * @param {number} timeoutAmount
+   * @param {'s'|'m'|'h'} timeoutUnits
+   * @returns {number}
+   */
+  function timeoutToMs(timeoutAmount, timeoutUnits){
+    return 1000 * timeoutAmount * (timeoutUnits === 'h' ? 3600 : timeoutUnits === 'm' ? 60 : 1);
+  }
+
+  /**
+   * @template T
+   * @param {Promise<T>} promise
+   * @param {number} timeoutAmount
+   * @param {'s'|'m'|'h'} timeoutUnits
+   * @returns {Promise<T>}
+   */
+  function withTimeout(timeoutAmount, timeoutUnits, promise) {
+    return timeout <= 0
+      ? promise
+      : Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject('Timed out'),timeoutToMs(timeoutAmount, timeoutUnits)))]);
+  }
+
+  /**
+   * @param {GetVehicleStatusConfig} config
+   */
   function GetVehicleStatus(config) {
     RED.nodes.createNode(this, config);
     this.bluelinkyConfig = RED.nodes.getNode(config.bluelinky);
@@ -19,21 +52,28 @@ module.exports = function (RED) {
     });
     node.on('input', async function (msg) {
       try {
+        // Ensure we are logged in
         if (!this.connected) {
-          return null;
+          throw new Error('Not connected')
         }
-        const car = await client.getVehicle(this.bluelinkyConfig.vin);
-        const status = await car.status({
-          refresh: config.dorefresh,
-          parsed: config.parsed,
-        });
-        node.send({
-          payload: status,
-        });
-      } catch (err) {
-        node.send({
-          payload: err,
-        });
+
+        // Attempt to find the vehicle
+        const car = client.getVehicle(this.bluelinkyConfig.vin);
+
+        // Request the status
+        const status = await withTimeout(
+          config.timeoutamount,
+          car.status({
+            refresh: config.dorefresh,
+            parsed: config.parsed,
+          })
+        );
+
+        msg.payload = status;
+      } catch (error) {
+        msg.payload = {error};
+      } finally {
+        node.send(msg);
       }
     });
   }
@@ -374,3 +414,13 @@ module.exports = function (RED) {
   RED.nodes.registerType('start-charge', StartCharge);
   RED.nodes.registerType('stop-charge', StopCharge);
 };
+
+/**
+ * @typedef {Object} GetVehicleStatusConfig
+ * @property {string} name
+ * @property {boolean} dorefresh
+ * @property {boolean} parsed
+ * @property {any} bluelinky
+ * @property {number} timeoutamount
+ * @property {'s'|'m'|'h'} timeoutunits
+ */

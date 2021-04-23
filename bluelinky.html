@@ -1,3 +1,4 @@
+<!-- Node: Get Status -->
 <script type="text/javascript">
   RED.nodes.registerType('car-status', {
     category: 'bluelinky',
@@ -7,6 +8,8 @@
       dorefresh: { value: true },
       parsed: { value: false },
       bluelinky: { value: 'Bluelinky config', type: 'bluelinky' },
+      timeoutamount: { value: 0 },
+      timeoutunits: { value: 's' }
     },
     inputs: 1,
     outputs: 1,
@@ -15,6 +18,39 @@
       return this.name || 'car-status';
     },
   });
+</script>
+
+<script type="text/html" data-template-name="car-status">
+  <div class="form-row">
+    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name" />
+  </div>
+  <div class="form-row">
+    <label for="node-input-dorefresh"> Refresh </label>
+    <input type="checkbox" style="display: inline-block; width: auto; vertical-align: top;" id="node-input-dorefresh" />
+  </div>
+  <div class="form-row">
+    <label for="node-input-parsed"> Parsed (Simpler object returned) </label>
+    <input type="checkbox" style="display: inline-block; width: auto; vertical-align: top;" id="node-input-parsed" />
+  </div>
+  <div class="form-row">
+    <label for="node-input-timeoutamount">Timeout</label>
+    <input
+      type="text"
+      style="text-align:end; width:70px !important"
+      autocomplete="off"
+      id="node-input-timeoutamount"
+    />
+    <select id="node-input-timeoutunits" style="width:140px !important">
+      <option value="s" >Seconds</option>
+      <option value="m" >Minutes</option>
+      <option value="h" >Hours</option>
+  </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-bluelinky"><i class="icon-tag"></i> Config</label>
+    <input type="text" id="node-input-bluelinky" placeholder="Name" />
+  </div>
 </script>
 
 <script type="text/javascript">
@@ -203,25 +239,6 @@
       return this.vin;
     },
   });
-</script>
-
-<script type="text/html" data-template-name="car-status">
-  <div class="form-row">
-    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
-    <input type="text" id="node-input-name" placeholder="Name" />
-  </div>
-  <div class="form-row">
-    <label for="node-input-dorefresh"> Refresh </label>
-    <input type="checkbox" style="display: inline-block; width: auto; vertical-align: top;" id="node-input-dorefresh" />
-  </div>
-  <div class="form-row">
-    <label for="node-input-parsed"> Parsed (Simpler object returned) </label>
-    <input type="checkbox" style="display: inline-block; width: auto; vertical-align: top;" id="node-input-parsed" />
-  </div>
-  <div class="form-row">
-    <label for="node-input-bluelinky"><i class="icon-tag"></i> Config</label>
-    <input type="text" id="node-input-bluelinky" placeholder="Name" />
-  </div>
 </script>
 
 <script type="text/html" data-help-name="car-status">
