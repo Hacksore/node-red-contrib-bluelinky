@@ -1,86 +1,73 @@
 const BlueLinky = require('bluelinky');
 const EventEmitter = require('events');
 
+/**
+ * @deprecated
+ */
 const State = new EventEmitter();
 
 /**
  * Interacts with the BlueLink API
  *
- * @type {BlueLinky.default}
+ * @type {}
+ * @deprecated Moving to config
  */
 let client;
 
+/**
+ * 
+ * @param {import('@node-red/registry').NodeAPI} RED 
+ */
 module.exports = function (RED) {
-
-  /**
-   * 
-   * @param {number} timeoutAmount
-   * @param {'s'|'m'|'h'} timeoutUnits
-   * @returns {number}
-   */
-  function timeoutToMs(timeoutAmount, timeoutUnits) {
-    return 1000 * timeoutAmount * (timeoutUnits === 'h' ? 3600 : timeoutUnits === 'm' ? 60 : 1);
-  }
-
-  /**
-   * @template T
-   * @param {Promise<T>} promise
-   * @param {number} timeoutAmount
-   * @param {'s'|'m'|'h'} timeoutUnits
-   * @returns {Promise<T>}
-   */
-  function withTimeout(timeoutAmount, timeoutUnits, promise) {
-    return timeoutAmount <= 0
-      ? promise
-      : Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject('Timed out'), timeoutToMs(timeoutAmount, timeoutUnits)))]);
-  }
-
   /**
    * @param {GetVehicleStatusConfig} config
    */
   function GetVehicleStatus(config) {
+    // Create the node
     RED.nodes.createNode(this, config);
-    this.bluelinkyConfig = RED.nodes.getNode(config.bluelinky);
     const node = this;
 
-    const handleStatusUpdate = (statusObject) => {
-      this.status(statusObject);
-      if (statusObject.text === 'Ready') {
-        this.connected = true;
-      }
-    };
+    /**
+     * Get the config node
+     * @type {BluelinkyNode}
+     */
+    node.bluelinkyConfig = RED.nodes.getNode(config.bluelinky);
 
-    State.on('changed', handleStatusUpdate);
-    // Update now
-    handleStatusUpdate(this.bluelinkyConfig.status);
-
+    // On input
     node.on('input', async function (msg) {
       // Determine the property
-      const msgProperty = config.msgproperty?.trim() || 'payload';
+      const msgProperty = (config.msgproperty || '').trim() || 'payload';
 
       try {
-        // Ensure we are logged in
-        if (!this.connected) {
-          throw new Error('Not connected');
-        }
+        node.status({ fill: 'gray', shape: 'ring', text: 'Awaiting Login...' });
+        // Wait until logged in
+        await withTimeout(
+          config.timeoutamount,
+          config.timeoutunits,
+          node.bluelinkyConfig.isLoggedIn
+        );
 
         // Attempt to find the vehicle
-        const car = client.getVehicle(this.bluelinkyConfig.vin);
+        const car = node.bluelinkyConfig.client.getVehicle(node.bluelinkyConfig.vin);
 
         // Request the status
+        node.status({ fill: 'gray', shape: 'ring', text: 'Status Requested...' });
         const status = await withTimeout(
           config.timeoutamount,
+          config.timeoutunits,
           car.status({
-            refresh: config.dorefresh,
-            parsed: config.parsed,
+            refresh: !!config.dorefresh,
+            parsed: !!config.parsed,
           })
         );
 
         msg[msgProperty] = status;
       } catch (error) {
         msg[msgProperty] = { error };
+        node.status({ fill: 'red', shape: 'ring', text: `Error at ${(new Date()).toISOString()}` });
       } finally {
         node.send(msg);
+        node.status({ fill: 'green', shape: 'ring', text: `Got status at ${(new Date()).toISOString()}` });
       }
     });
   }
@@ -369,25 +356,111 @@ module.exports = function (RED) {
 
   function Login(config) {
     RED.nodes.createNode(this, config);
+
+    /**
+     * @type {BluelinkyNode}
+     */
     this.bluelinkyConfig = RED.nodes.getNode(config.bluelinky);
-    this.on('input', async function (msg) {
-      State.emit('changed', { fill: 'grey', shape: 'ring', text: 'Logging in...' });
-      client.login();
+    this.status(this.bluelinkyConfig.status);
+    this.bluelinkyConfig.statusEmitter.on('changed', (status) => this.status(status));
+
+    this.on('input', async (msg) => {
+      try {
+        // Start the login process
+        this.bluelinkyConfig.login();
+        await this.bluelinkyConfig.isLoggedIn;
+        msg.payload = `Logged in at ${(new Date()).toISOString()}`;
+
+      } catch (error) {
+        msg.payload = { error };
+
+      } finally {
+        this.send(msg);
+      }
     });
   }
 
+
+  /**
+   * 
+   * @param {BlueLinkyConfig} config 
+   */
   function BluelinkyNode(config) {
+    // Create the node-red node
     RED.nodes.createNode(this, config);
+
+    // Read in the config
     this.username = config.username;
     this.password = config.password;
     this.region = config.region;
     this.pin = config.pin;
     this.vin = config.vin;
     this.brand = config.brand;
-    this.status = { fill: 'grey', shape: 'ring', text: 'Logging in...' };
-    State.emit('changed', this.status);
 
-    client = new BlueLinky({
+    // Setup status emitter
+    this.statusEmitter = new EventEmitter();
+    this.statusEmitter.on('changed', (status) => this.status = status);
+
+    /**
+     * Controls the result of the login promise
+     */
+    const deferedLoginPromise = {
+      /**
+       * @type {(value:boolean)=>void}
+       */
+      resolve: undefined,
+      /**
+       * @type {(error:any)=>void}
+       */
+      reject: undefined,
+      settled: true
+    };
+
+    /**
+     * Promise
+     * Starts out as unsettled
+     * if client.ready => resolve(true)
+     * if client.error => reject
+     * if login => new promise
+     *
+     * Will never resolve to false.
+     */
+    const createLoginPromise = () => {
+      // Reject old promise if unsettled
+      if (!deferedLoginPromise.settled) {
+        deferedLoginPromise.reject(new Error('Aborted'));
+      }
+
+      /**
+       * Create the new promise
+       * @type {Promise<boolean>}
+       */
+      this.isLoggedIn = new Promise((resolve, reject) => {
+        deferedLoginPromise.resolve = resolve;
+        deferedLoginPromise.reject = reject;
+        deferedLoginPromise.settled = false;
+      });
+
+      // Update the status when resolved/rejected
+      this.isLoggedIn.then(
+        () => this.statusEmitter.emit('changed', { fill: 'green', shape: 'ring', text: `Ready at ${(new Date()).toISOString()}` }),
+        () => this.statusEmitter.emit('changed', { fill: 'red', shape: 'ring', text: `Error at ${(new Date()).toISOString()}` })
+      );
+
+      // Note when it is settled
+      this.isLoggedIn.finally(() => deferedLoginPromise.settled = true);
+    };
+    /**
+     * @type {Promise<true>}
+     */
+    this.isLoggedIn = undefined;
+    createLoginPromise();
+
+    /**
+     * Create the client
+     * @type {BlueLinky.default}
+     */
+    this.client = new BlueLinky({
       username: this.username,
       password: this.password,
       region: this.region,
@@ -395,18 +468,57 @@ module.exports = function (RED) {
       brand: this.brand,
     });
 
-    client.on('ready', () => {
-      // we have logged in and have access to API now
-      // how do we make sure nodes wait until the client is ready?
-      this.status = { fill: 'green', shape: 'ring', text: 'Ready' };
-      State.emit('changed', this.status);
-    });
 
-    client.on('error', () => {
-      this.status = { fill: 'red', shape: 'ring', text: 'Error' };
-      State.emit('changed', this.status);
-    });
+    const handleClientEvent = (event) => {
+      // If already settled, this should goto a new promise
+      if (deferedLoginPromise.settled) {
+        createLoginPromise();
+      }
+
+      if (event === 'ready') {
+        deferedLoginPromise.resolve(true);
+      } else if (event === 'error') {
+        deferedLoginPromise.reject(new Error('Unable to connect/login'));
+      } else {
+        deferedLoginPromise.reject(new Error('Unknown client status'));
+      }
+    };
+
+    // Listen for client events
+    this.client.on('ready', () => handleClientEvent('ready'));
+    this.client.on('error', () => handleClientEvent('error'));
+
+    // Define login
+    this.login = () => {
+      this.statusEmitter.emit('changed', { fill: 'grey', shape: 'ring', text: 'Logging in...' });
+      createLoginPromise();
+      this.client.login();
+    };
   }
+
+  /**
+   * 
+   * @param {number} timeoutAmount
+   * @param {'s'|'m'|'h'} timeoutUnits
+   * @returns {number}
+   */
+  function timeoutToMs(timeoutAmount, timeoutUnits) {
+    return 1000 * timeoutAmount * (timeoutUnits === 'h' ? 3600 : timeoutUnits === 'm' ? 60 : 1);
+  }
+
+  /**
+   * @template T
+   * @param {Promise<T>} promise
+   * @param {number} timeoutAmount
+   * @param {'s'|'m'|'h'} timeoutUnits
+   * @returns {Promise<T>}
+   */
+  function withTimeout(timeoutAmount, timeoutUnits, promise) {
+    return timeoutAmount <= 0
+      ? promise
+      : Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject('Timed out'), timeoutToMs(timeoutAmount, timeoutUnits)))]);
+  }
+
 
   RED.nodes.registerType('bluelinky', BluelinkyNode);
   RED.nodes.registerType('login', Login);
@@ -422,6 +534,11 @@ module.exports = function (RED) {
   RED.nodes.registerType('stop-charge', StopCharge);
 };
 
+
+/**
+ * @typedef {import('@node-red/registry').Node} Node
+ */
+
 /**
  * @typedef {Object} GetVehicleStatusConfig
  * @property {string} name
@@ -431,4 +548,14 @@ module.exports = function (RED) {
  * @property {number} timeoutamount
  * @property {'s'|'m'|'h'} timeoutunits
  * @property {string} msgproperty
+ */
+
+/**
+ * @typedef {Object} BlueLinkyConfig
+ * @property {string} username
+ * @property {string} password
+ * @property {string} region
+ * @property {string} pin
+ * @property {string} vin
+ * @property {string} brand
  */

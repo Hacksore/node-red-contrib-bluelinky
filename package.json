@@ -34,5 +34,8 @@
   "homepage": "https://github.com/SondreNjaastad/node-red-contrib-bluelinky#readme",
   "dependencies": {
     "bluelinky": "^7.1.0"
+  },
+  "devDependencies": {
+    "@types/node-red": "^1.1.1"
   }
 }
