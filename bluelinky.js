@@ -30,7 +30,7 @@ module.exports = function (RED) {
    * @returns {Promise<T>}
    */
   function withTimeout(timeoutAmount, timeoutUnits, promise) {
-    return timeout <= 0
+    return timeoutAmount <= 0
       ? promise
       : Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject('Timed out'), timeoutToMs(timeoutAmount, timeoutUnits)))]);
   }
@@ -41,15 +41,19 @@ module.exports = function (RED) {
   function GetVehicleStatus(config) {
     RED.nodes.createNode(this, config);
     this.bluelinkyConfig = RED.nodes.getNode(config.bluelinky);
-    this.status(this.bluelinkyConfig.status);
-    this.connected = false;
     const node = this;
-    State.on('changed', (statusObject) => {
+
+    const handleStatusUpdate = (statusObject) => {
       this.status(statusObject);
       if (statusObject.text === 'Ready') {
         this.connected = true;
       }
-    });
+    };
+
+    State.on('changed', handleStatusUpdate);
+    // Update now
+    handleStatusUpdate(this.bluelinkyConfig.status);
+
     node.on('input', async function (msg) {
       // Determine the property
       const msgProperty = config.msgproperty?.trim() || 'payload';
