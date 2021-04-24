@@ -18,7 +18,7 @@ module.exports = function (RED) {
    * @param {'s'|'m'|'h'} timeoutUnits
    * @returns {number}
    */
-  function timeoutToMs(timeoutAmount, timeoutUnits){
+  function timeoutToMs(timeoutAmount, timeoutUnits) {
     return 1000 * timeoutAmount * (timeoutUnits === 'h' ? 3600 : timeoutUnits === 'm' ? 60 : 1);
   }
 
@@ -32,7 +32,7 @@ module.exports = function (RED) {
   function withTimeout(timeoutAmount, timeoutUnits, promise) {
     return timeout <= 0
       ? promise
-      : Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject('Timed out'),timeoutToMs(timeoutAmount, timeoutUnits)))]);
+      : Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject('Timed out'), timeoutToMs(timeoutAmount, timeoutUnits)))]);
   }
 
   /**
@@ -51,10 +51,13 @@ module.exports = function (RED) {
       }
     });
     node.on('input', async function (msg) {
+      // Determine the property
+      const msgProperty = config.msgproperty?.trim() || 'payload';
+
       try {
         // Ensure we are logged in
         if (!this.connected) {
-          throw new Error('Not connected')
+          throw new Error('Not connected');
         }
 
         // Attempt to find the vehicle
@@ -69,9 +72,9 @@ module.exports = function (RED) {
           })
         );
 
-        msg.payload = status;
+        msg[msgProperty] = status;
       } catch (error) {
-        msg.payload = {error};
+        msg[msgProperty] = { error };
       } finally {
         node.send(msg);
       }
@@ -423,4 +426,5 @@ module.exports = function (RED) {
  * @property {any} bluelinky
  * @property {number} timeoutamount
  * @property {'s'|'m'|'h'} timeoutunits
+ * @property {string} msgproperty
  */
