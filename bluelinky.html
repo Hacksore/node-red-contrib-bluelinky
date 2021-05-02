@@ -10,31 +10,56 @@
       bluelinky: { value: 'Bluelinky config', type: 'bluelinky' },
       timeoutamount: { value: 0 },
       timeoutunits: { value: 's' },
-      msgproperty: { value: 'payload' }
+      msgproperty: { value: 'payload' },
+      errorproperty: { value: 'payload' },
+      senderrortoaltoutput: { value: false },
+      ignoremessageifpending: { value: true }
     },
     inputs: 1,
-    outputs: 1,
+    outputs: 2,
     icon: 'bluelinky.png',
     label: function () {
       return this.name || 'car-status';
     },
   });
 </script>
-
 <script type="text/html"
         data-template-name="car-status">
+  <!-- Name -->
   <div class="form-row">
     <label for="node-input-name"><i class="icon-tag"></i> Name</label>
     <input type="text" id="node-input-name" placeholder="Name" />
   </div>
+
+  <!-- Force Refresh -->
   <div class="form-row">
-    <label for="node-input-dorefresh"> Refresh </label>
+    <label></label>
     <input type="checkbox" style="display: inline-block; width: auto; vertical-align: top;" id="node-input-dorefresh" />
+    <label for="node-input-dorefresh" style="width: auto;"> Refresh </label>
   </div>
+
+  <!-- Parsed -->
   <div class="form-row">
-    <label for="node-input-parsed"> Parsed (Simpler object returned) </label>
+    <label></label>
     <input type="checkbox" style="display: inline-block; width: auto; vertical-align: top;" id="node-input-parsed" />
+    <label for="node-input-parsed" style="width: auto;"> Parsed (Simpler object returned) </label>
   </div>
+
+  <!-- Send Error To Alt Ouput -->
+  <div class="form-row">
+    <label></label>
+    <input type="checkbox" style="display: inline-block; width: auto; vertical-align: top;" id="node-input-senderrortoaltoutput" />
+    <label for="node-input-senderrortoaltoutput" style="width: auto;"> Send error message to separate output </label>
+  </div>
+
+  <!-- Ignore If Pending -->
+  <div class="form-row">
+    <label></label>
+    <input type="checkbox" style="display: inline-block; width: auto; vertical-align: top;" id="node-input-ignoremessageifpending" />
+    <label for="node-input-ignoremessageifpending" style="width: auto;"> Ignore input while request is pending </label>
+  </div>
+
+  <!-- Timeout -->
   <div class="form-row">
     <label for="node-input-timeoutamount">Timeout</label>
     <input
@@ -49,10 +74,12 @@
       <option value="h" >Hours</option>
   </select>
   </div>
+
+  <!-- Property -->
   <div class="form-row">
     <label for="node-input-msgproperty">
       <i class="fa fa-ellipsis-h"></i>
-      Property
+      Status
     </label>
     <div style="display: inline-block; width: 10%;">
       msg.
@@ -63,6 +90,24 @@
       autocomplete="off"
       id="node-input-msgproperty" />
   </div>
+
+  <!-- Error Property -->
+  <div class="form-row">
+    <label for="node-input-errorproperty">
+      <i class="fa fa-ellipsis-h"></i>
+      Error
+    </label>
+    <div style="display: inline-block; width: 10%;">
+      msg.
+  </div>
+    <input
+      type="text"
+      style="width: 60% !important;"
+      autocomplete="off"
+      id="node-input-errorproperty" />
+  </div>
+
+  <!-- Bluelink Config -->
   <div class="form-row">
     <label for="node-input-bluelinky"><i class="icon-tag"></i> Config</label>
     <input type="text" id="node-input-bluelinky" placeholder="Name" />

@@ -33,11 +33,11 @@ module.exports = function (RED) {
      */
     node.bluelinkyConfig = RED.nodes.getNode(config.bluelinky);
 
-    // On input
-    node.on('input', async function (msg) {
-      // Determine the property
-      const msgProperty = (config.msgproperty || '').trim() || 'payload';
-
+    /**
+     * 
+     * @returns {Promise<[object|undefined,object|undefined]>}
+     */
+    const requestStatus = async function () {
       try {
         node.status({ fill: 'gray', shape: 'ring', text: 'Awaiting Login...' });
         // Wait until logged in
@@ -48,27 +48,70 @@ module.exports = function (RED) {
         );
 
         // Attempt to find the vehicle
-        const car = node.bluelinkyConfig.client.getVehicle(node.bluelinkyConfig.vin);
+        const vehicle = node.bluelinkyConfig.client.getVehicle(node.bluelinkyConfig.vin);
+
+        // Start the status request
+        const statusRequest$ = vehicle.status({
+          refresh: !!config.dorefresh,
+          parsed: !!config.parsed,
+        });
 
         // Request the status
         node.status({ fill: 'gray', shape: 'ring', text: 'Status Requested...' });
         const status = await withTimeout(
           config.timeoutamount,
           config.timeoutunits,
-          car.status({
-            refresh: !!config.dorefresh,
-            parsed: !!config.parsed,
-          })
+          statusRequest$
         );
 
-        msg[msgProperty] = status;
-      } catch (error) {
-        msg[msgProperty] = { error };
-        node.status({ fill: 'red', shape: 'ring', text: `Error at ${(new Date()).toISOString()}` });
-      } finally {
-        node.send(msg);
+        // Set the message and status
         node.status({ fill: 'green', shape: 'ring', text: `Got status at ${(new Date()).toISOString()}` });
+        const msgProperty = (config.msgproperty || '').trim() || 'payload';
+        var msg = { [msgProperty]: status };
+
+        return [msg, undefined];
+
+      } catch (error) {
+        // Set the message and status
+        node.status({ fill: 'red', shape: 'ring', text: `Error at ${(new Date()).toISOString()}` });
+        const errorProperty = (config.errorproperty || '').trim() || 'payload';
+        var msg = { [errorProperty]: error };
+
+        if (config.senderrortoaltoutput) {
+          return [undefined, msg];
+        } else {
+          return [msg, undefined];
+        }
+
       }
+    };
+
+    /**
+     * @type {Promise<[object|undefined,object|undefined]> | undefined}
+     */
+    let pendingRequest$ = undefined;
+
+    // On input
+    node.on('input', async (msg) => {
+      if (pendingRequest$ === undefined) {
+        // Set the pending request
+        pendingRequest$ = requestStatus();
+
+      } else if (config.ignoremessageifpending) {
+        // Ignore
+        return;
+      }
+
+      // Await the pending request
+      const outputs = await pendingRequest$;
+
+      // Clear the pending request
+      pendingRequest$ = undefined;
+
+      // Merge with the original message & send
+      node.send(outputs.map(
+        (output) => output ? Object.assign(msg, output) : undefined)
+      );
     });
   }
 
@@ -547,7 +590,10 @@ module.exports = function (RED) {
  * @property {any} bluelinky
  * @property {number} timeoutamount
  * @property {'s'|'m'|'h'} timeoutunits
- * @property {string} msgproperty
+ * @property {string} msgproperty,
+ * @property {string} errorproperty,
+ * @property {boolean} senderrortoaltoutput
+ * @property {boolean} ignoremessageifpending
  */
 
 /**
