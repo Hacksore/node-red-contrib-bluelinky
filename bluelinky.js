@@ -20,74 +20,130 @@ let client;
  */
 module.exports = function (RED) {
   /**
-   * @param {GetVehicleStatusConfig} config
+   * For consistency, these should mirror the defaults as defined in the HTML.
+   * Needed for config migration across versions
    */
-  function GetVehicleStatus(config) {
+  const defaultConfigs = {
+    GetVehicleStatus: {
+      name: { value: 'Get full status' },
+      dorefresh: { value: true },
+      parsed: { value: false },
+      bluelinky: { value: 'Bluelinky config', type: 'bluelinky' },
+      timeoutamount: { value: 0 },
+      timeoutunits: { value: 's' },
+      msgproperty: { value: 'payload' },
+      errorproperty: { value: 'payload' },
+      senderrortoaltoutput: { value: false },
+      ignoremessageifpending: { value: true },
+    },
+    GetFullVehicleStatus: {
+      name: { value: 'Get full status' },
+      dorefresh: { value: true },
+      parsed: { value: false },
+      bluelinky: { value: 'Bluelinky config', type: 'bluelinky' },
+      timeoutamount: { value: 0 },
+      timeoutunits: { value: 's' },
+      msgproperty: { value: 'payload' },
+      errorproperty: { value: 'payload' },
+      senderrortoaltoutput: { value: false },
+      ignoremessageifpending: { value: true },
+    }
+  };
+
+  /**
+   * Sets any undefined/null value to the default value, excluding name and bluelinky
+   */
+  function applyDefaultConfig(config, defaultConfig) {
+    Object.entries(defaultConfig).forEach(([key, { value }]) => {
+      if (key === 'name' || key === 'bluelinky') {
+        return;
+      }
+      if (config[key] == null) {
+        config[key] = value;
+      }
+    });
+  }
+
+  /**
+   * 
+   * @param {BluelinkyNode} node
+   * @param {CommonConfig} config
+   * @param {(vehicle:Vehicle)=>Promise<any>} createVehicleRequest
+   * @returns {DualOutputPromise}
+   */
+  const callAPI = async (node, config, createVehicleRequest) => {
+    try {
+      // Ensure bluelinky config
+      if (node.bluelinkyConfig == null) {
+        throw 'Bluelinky Config Is Not Set';
+      }
+
+      node.status({ fill: 'gray', shape: 'ring', text: 'Awaiting Login...' });
+      // Wait until logged in
+      await withTimeout(
+        config.timeoutamount,
+        config.timeoutunits,
+        node.bluelinkyConfig.isLoggedIn
+      );
+
+      // Attempt to find the vehicle
+      const vehicle = node.bluelinkyConfig.client.getVehicle(node.bluelinkyConfig.vin);
+
+      // Start the request
+      const vehicleRequest$ = createVehicleRequest(vehicle);
+
+      // Request the status
+      node.status({ fill: 'gray', shape: 'ring', text: 'Request sent...' });
+      const requestResult = await withTimeout(
+        config.timeoutamount,
+        config.timeoutunits,
+        vehicleRequest$
+      );
+
+      // Set the message and status
+      node.status({ fill: 'green', shape: 'ring', text: `Request finished at ${(new Date()).toLocaleString()}` });
+      const msgProperty = (config.msgproperty || '').trim() || 'payload';
+      var msg = { [msgProperty]: requestResult };
+
+      return [msg, undefined];
+
+    } catch (error) {
+      // Set the message and status
+      node.status({ fill: 'red', shape: 'ring', text: `Error at ${(new Date()).toLocaleString()}` });
+      const errorProperty = (config.errorproperty || '').trim() || 'payload';
+      var msg = { [errorProperty]: error };
+
+      if (config.senderrortoaltoutput) {
+        // Send to alt output
+        return [undefined, msg];
+      } else {
+        // Send to main output
+        return [msg, undefined];
+      }
+
+    }
+  };
+
+  /**
+   * 
+   * @param {BluelinkyNode} node
+   * @param {CommonConfig} config
+   * @param {object} defaultConfig
+   * @param {(vehicle:Vehicle)=>Promise<any>} createVehicleRequest
+   */
+  const createAPINode = (node, config, defaultConfig, createVehicleRequest) => {
+    applyDefaultConfig(config, defaultConfig);
+
     // Create the node
-    RED.nodes.createNode(this, config);
-    const node = this;
+    RED.nodes.createNode(node, config);
 
     /**
      * Get the config node
-     * @type {BluelinkyNode}
      */
     node.bluelinkyConfig = RED.nodes.getNode(config.bluelinky);
 
     /**
-     * 
-     * @returns {Promise<[object|undefined,object|undefined]>}
-     */
-    const requestStatus = async function () {
-      try {
-        node.status({ fill: 'gray', shape: 'ring', text: 'Awaiting Login...' });
-        // Wait until logged in
-        await withTimeout(
-          config.timeoutamount,
-          config.timeoutunits,
-          node.bluelinkyConfig.isLoggedIn
-        );
-
-        // Attempt to find the vehicle
-        const vehicle = node.bluelinkyConfig.client.getVehicle(node.bluelinkyConfig.vin);
-
-        // Start the status request
-        const statusRequest$ = vehicle.status({
-          refresh: !!config.dorefresh,
-          parsed: !!config.parsed,
-        });
-
-        // Request the status
-        node.status({ fill: 'gray', shape: 'ring', text: 'Status Requested...' });
-        const status = await withTimeout(
-          config.timeoutamount,
-          config.timeoutunits,
-          statusRequest$
-        );
-
-        // Set the message and status
-        node.status({ fill: 'green', shape: 'ring', text: `Got status at ${(new Date()).toISOString()}` });
-        const msgProperty = (config.msgproperty || '').trim() || 'payload';
-        var msg = { [msgProperty]: status };
-
-        return [msg, undefined];
-
-      } catch (error) {
-        // Set the message and status
-        node.status({ fill: 'red', shape: 'ring', text: `Error at ${(new Date()).toISOString()}` });
-        const errorProperty = (config.errorproperty || '').trim() || 'payload';
-        var msg = { [errorProperty]: error };
-
-        if (config.senderrortoaltoutput) {
-          return [undefined, msg];
-        } else {
-          return [msg, undefined];
-        }
-
-      }
-    };
-
-    /**
-     * @type {Promise<[object|undefined,object|undefined]> | undefined}
+     * @type {DualOutputPromise | undefined}
      */
     let pendingRequest$ = undefined;
 
@@ -95,7 +151,7 @@ module.exports = function (RED) {
     node.on('input', async (msg) => {
       if (pendingRequest$ === undefined) {
         // Set the pending request
-        pendingRequest$ = requestStatus();
+        pendingRequest$ = callAPI(node, config, createVehicleRequest);
 
       } else if (config.ignoremessageifpending) {
         // Ignore
@@ -113,38 +169,36 @@ module.exports = function (RED) {
         (output) => output ? Object.assign(msg, output) : undefined)
       );
     });
+  };
+
+  /**
+   * @param {GetVehicleStatusConfig} config
+   */
+  function GetVehicleStatus(config) {
+    createAPINode(
+      this,
+      config,
+      defaultConfigs.GetVehicleStatus,
+      (vehicle) => vehicle.status({
+        refresh: !!config.dorefresh,
+        parsed: !!config.parsed,
+      })
+    );
   }
 
+  /**
+   * 
+   * @param {GetFullVehicleStatusConfig} config 
+   */
   function GetFullVehicleStatus(config) {
-    RED.nodes.createNode(this, config);
-    this.bluelinkyConfig = RED.nodes.getNode(config.bluelinky);
-    this.status(this.bluelinkyConfig.status);
-    this.connected = false;
-    const node = this;
-    State.on('changed', (statusObject) => {
-      this.status(statusObject);
-      if (statusObject.text === 'Ready') {
-        this.connected = true;
-      }
-    });
-    node.on('input', async function (msg) {
-      try {
-        if (!this.connected) {
-          return null;
-        }
-        const car = await client.getVehicle(this.bluelinkyConfig.vin);
-        const status = await car.fullStatus({
-          refresh: config.dorefresh,
-        });
-        node.send({
-          payload: status,
-        });
-      } catch (err) {
-        node.send({
-          payload: err,
-        });
-      }
-    });
+    createAPINode(
+      this,
+      config,
+      defaultConfigs.GetFullVehicleStatus,
+      (vehicle) => vehicle.fullStatus({
+        refresh: !!config.dorefresh
+      })
+    );
   }
 
   function Unlock(config) {
@@ -401,7 +455,7 @@ module.exports = function (RED) {
     RED.nodes.createNode(this, config);
 
     /**
-     * @type {BluelinkyNode}
+     * @type {BluelinkyConfigNode}
      */
     this.bluelinkyConfig = RED.nodes.getNode(config.bluelinky);
     this.status(this.bluelinkyConfig.status);
@@ -428,7 +482,7 @@ module.exports = function (RED) {
    * 
    * @param {BlueLinkyConfig} config 
    */
-  function BluelinkyNode(config) {
+  function BluelinkyConfigNode(config) {
     // Create the node-red node
     RED.nodes.createNode(this, config);
 
@@ -449,7 +503,7 @@ module.exports = function (RED) {
      */
     const deferedLoginPromise = {
       /**
-       * @type {(value:boolean)=>void}
+       * @type {(value:true)=>void}
        */
       resolve: undefined,
       /**
@@ -476,7 +530,6 @@ module.exports = function (RED) {
 
       /**
        * Create the new promise
-       * @type {Promise<boolean>}
        */
       this.isLoggedIn = new Promise((resolve, reject) => {
         deferedLoginPromise.resolve = resolve;
@@ -537,6 +590,8 @@ module.exports = function (RED) {
       createLoginPromise();
       this.client.login();
     };
+
+    // TODO: When node is destroyed, reject login promise if pending
   }
 
   /**
@@ -563,7 +618,7 @@ module.exports = function (RED) {
   }
 
 
-  RED.nodes.registerType('bluelinky', BluelinkyNode);
+  RED.nodes.registerType('bluelinky', BluelinkyConfigNode);
   RED.nodes.registerType('login', Login);
   RED.nodes.registerType('car-status', GetVehicleStatus);
   RED.nodes.registerType('car-fullstatus', GetFullVehicleStatus);
@@ -577,16 +632,34 @@ module.exports = function (RED) {
   RED.nodes.registerType('stop-charge', StopCharge);
 };
 
+/**
+ * @typedef {import('bluelinky/dist/vehicles/vehicle').Vehicle} Vehicle
+ */
 
 /**
  * @typedef {import('@node-red/registry').Node} Node
  */
 
 /**
- * @typedef {Object} GetVehicleStatusConfig
+ * @typedef {Object} BluelinkyConfigNode
+ * @property {string} username
+ * @property {string} password
+ * @property {string} region
+ * @property {string} pin
+ * @property {string} vin
+ * @property {string} brand
+ * @property {EventEmitter} statusEmitter
+ * @property {Promise<true>} isLoggedIn
+ * @property {BlueLinky.default} client
+ */
+
+/**
+ * @typedef {Node & {bluelinkyConfig:BluelinkyConfigNode}} BluelinkyNode
+ */
+
+/**
+ * @typedef {Object} CommonConfig
  * @property {string} name
- * @property {boolean} dorefresh
- * @property {boolean} parsed
  * @property {any} bluelinky
  * @property {number} timeoutamount
  * @property {'s'|'m'|'h'} timeoutunits
@@ -597,6 +670,18 @@ module.exports = function (RED) {
  */
 
 /**
+ * @typedef {CommonConfig & {dorefresh: boolean}} VehicleStatusConfig
+ */
+
+/**
+ * @typedef {VehicleStatusConfig & {parsed: boolean}} GetVehicleStatusConfig
+ */
+
+/**
+ * @typedef {VehicleStatusConfig} GetFullVehicleStatusConfig
+ */
+
+/**
  * @typedef {Object} BlueLinkyConfig
  * @property {string} username
  * @property {string} password
@@ -604,4 +689,10 @@ module.exports = function (RED) {
  * @property {string} pin
  * @property {string} vin
  * @property {string} brand
+ */
+
+/**
+ * @typedef {Promise<[object|undefined,object|undefined]>} DualOutputPromise
+ * * [0]: Main output. Outputs success messages, and error messages if SendErrorToAltOutput is false
+ * * [1]: Error output. Outputs error messages if SendErrorToAltOutput is true
  */
