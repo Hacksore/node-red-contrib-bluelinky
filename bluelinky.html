@@ -2,50 +2,64 @@
 <script type="text/javascript">
   // Wrapped in a function to prevent variables from leaking into the global scope
   const bluelinkyInitNodes = () => {
+    // If a default config is updated, also update it in the JS
+    const commonDefaults = {
+      bluelinky: { value: 'Bluelinky config', type: 'bluelinky' },
+      timeoutamount: { value: 0 },
+      timeoutunits: { value: 's' },
+      msgproperty: { value: 'payload' },
+      errorproperty: { value: 'payload' },
+      senderrortoaltoutput: { value: false },
+      ignoremessageifpending: { value: true },
+    };
     const defaultConfigs = {
       GetVehicleStatus: {
+        ...commonDefaults,
         name: { value: 'Get full status' },
         dorefresh: { value: true },
         parsed: { value: false },
-        bluelinky: { value: 'Bluelinky config', type: 'bluelinky' },
-        timeoutamount: { value: 0 },
-        timeoutunits: { value: 's' },
-        msgproperty: { value: 'payload' },
-        errorproperty: { value: 'payload' },
-        senderrortoaltoutput: { value: false },
-        ignoremessageifpending: { value: true },
       },
       GetFullVehicleStatus: {
+        ...commonDefaults,
         name: { value: 'Get full status' },
         dorefresh: { value: true },
-        bluelinky: { value: 'Bluelinky config', type: 'bluelinky' },
-        timeoutamount: { value: 0 },
-        timeoutunits: { value: 's' },
-        msgproperty: { value: 'payload' },
-        errorproperty: { value: 'payload' },
-        senderrortoaltoutput: { value: false },
-        ignoremessageifpending: { value: true },
       },
       Odometer: {
+        ...commonDefaults,
         name: { value: 'Get car odometer' },
-        bluelinky: { value: 'Bluelinky config', type: 'bluelinky' },
-        timeoutamount: { value: 0 },
-        timeoutunits: { value: 's' },
-        msgproperty: { value: 'payload' },
-        errorproperty: { value: 'payload' },
-        senderrortoaltoutput: { value: false },
-        ignoremessageifpending: { value: true },
       },
       Location: {
+        ...commonDefaults,
         name: { value: 'Get car location' },
-        bluelinky: { value: 'Bluelinky config', type: 'bluelinky' },
-        timeoutamount: { value: 0 },
-        timeoutunits: { value: 's' },
-        msgproperty: { value: 'payload' },
-        errorproperty: { value: 'payload' },
-        senderrortoaltoutput: { value: false },
-        ignoremessageifpending: { value: true },
-      }
+      },
+      Unlock: {
+        ...commonDefaults,
+        name: { value: 'Unlock car' },
+      },
+      Lock: {
+        ...commonDefaults,
+        name: { value: 'Lock car' },
+      },
+      StartCar: {
+        ...commonDefaults,
+        name: { value: 'Start car' }
+      },
+      StopCar: {
+        ...commonDefaults,
+        name: { value: 'Stop car' }
+      },
+      StartCharge: {
+        ...commonDefaults,
+        name: { value: 'Start Charging' }
+      },
+      StopCharge: {
+        ...commonDefaults,
+        name: { value: 'Stop Charging' }
+      },
+      Login: {
+        ...commonDefaults,
+        name: { value: 'Login' }
+      },
     };
 
     /**
@@ -65,7 +79,7 @@
       });
     };
 
-    const registerBluelinkyNode = (typeName, defaultConfig) => {
+    const registerBluelinkyFlowNode = (typeName, defaultConfig) => {
       RED.nodes.registerType(typeName, {
         category: 'bluelinky',
         color: '#3FADB5',
@@ -82,11 +96,34 @@
       });
     };
 
-    // Register the nodes
-    registerBluelinkyNode('car-status', defaultConfigs.GetVehicleStatus);
-    registerBluelinkyNode('car-fullstatus', defaultConfigs.GetFullVehicleStatus);
-    registerBluelinkyNode('car-odometer', defaultConfigs.Odometer);
-    registerBluelinkyNode('car-location', defaultConfigs.Location);
+    // Register flow nodes
+    registerBluelinkyFlowNode('car-status', defaultConfigs.GetVehicleStatus);
+    registerBluelinkyFlowNode('car-fullstatus', defaultConfigs.GetFullVehicleStatus);
+    registerBluelinkyFlowNode('car-odometer', defaultConfigs.Odometer);
+    registerBluelinkyFlowNode('car-location', defaultConfigs.Location);
+    registerBluelinkyFlowNode('unlock-car', defaultConfigs.Unlock);
+    registerBluelinkyFlowNode('lock-car', defaultConfigs.Lock);
+    registerBluelinkyFlowNode('start-car', defaultConfigs.StartCar);
+    registerBluelinkyFlowNode('stop-car', defaultConfigs.StopCar);
+    registerBluelinkyFlowNode('start-charge', defaultConfigs.StartCharge);
+    registerBluelinkyFlowNode('stop-charge', defaultConfigs.StopCharge);
+    registerBluelinkyFlowNode('login', defaultConfigs.Login);
+
+    // Register config node
+    RED.nodes.registerType('bluelinky', {
+      category: 'config',
+      defaults: {
+        username: { required: true },
+        password: { required: true },
+        region: { value: 'EU', required: true },
+        pin: { required: true, validate: RED.validators.number() },
+        vin: { required: true },
+        brand: { value: 'hyundai', required: true },
+      },
+      label: function () {
+        return this.vin;
+      },
+    });
 
   };
 
@@ -96,7 +133,7 @@
 <!-- Node Template: Get Vehicle Status -->
 <script type="text/html"
         data-template-name="car-status">
-  <!-- Name -->
+<!-- Name -->
 <div class="form-row">
   <label for="node-input-name"><i class="icon-tag"></i> Name</label>
   <input type="text"
@@ -205,7 +242,7 @@
 <!-- Node Template: Get Full Vehicle Status -->
 <script type="text/html"
         data-template-name="car-fullstatus">
-  <!-- Name -->
+<!-- Name -->
 <div class="form-row">
   <label for="node-input-name"><i class="icon-tag"></i> Name</label>
   <input type="text"
@@ -304,7 +341,7 @@
 <!-- Node Template: Odometer -->
 <script type="text/html"
         data-template-name="car-odometer">
-  <!-- Name -->
+<!-- Name -->
 <div class="form-row">
   <label for="node-input-name"><i class="icon-tag"></i> Name</label>
   <input type="text"
@@ -393,7 +430,7 @@
 <!-- Node Template: Location -->
 <script type="text/html"
         data-template-name="car-location">
-  <!-- Name -->
+<!-- Name -->
 <div class="form-row">
   <label for="node-input-name"><i class="icon-tag"></i> Name</label>
   <input type="text"
@@ -479,167 +516,268 @@
   <p>Get the location of the configured vehicle</p>
 </script>
 
+<!-- Node Template: Unlock Car -->
 <script type="text/html"
-        data-template-name="start-charge">
-  <div class="form-row">
-    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
-    <input type="text" id="node-input-name" placeholder="Name" />
+        data-template-name="unlock-car">
+<!-- Name -->
+<div class="form-row">
+  <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+  <input type="text"
+         id="node-input-name"
+         placeholder="Name" />
+</div>
+
+<!-- Send Error To Alt Ouput -->
+<div class="form-row">
+  <label></label>
+  <input type="checkbox"
+         style="display: inline-block; width: auto; vertical-align: top;"
+         id="node-input-senderrortoaltoutput" />
+  <label for="node-input-senderrortoaltoutput"
+         style="width: auto;"> Send error message to separate output </label>
+</div>
+
+<!-- Ignore If Pending -->
+<div class="form-row">
+  <label></label>
+  <input type="checkbox"
+         style="display: inline-block; width: auto; vertical-align: top;"
+         id="node-input-ignoremessageifpending" />
+  <label for="node-input-ignoremessageifpending"
+         style="width: auto;"> Ignore input while request is pending </label>
+</div>
+
+<!-- Timeout -->
+<div class="form-row">
+  <label for="node-input-timeoutamount">Timeout</label>
+  <input type="number"
+         style="text-align:end; width:70px !important"
+         autocomplete="off"
+         id="node-input-timeoutamount" />
+  <select id="node-input-timeoutunits"
+          style="width:140px !important">
+    <option value="s">Seconds</option>
+    <option value="m">Minutes</option>
+    <option value="h">Hours</option>
+  </select>
+</div>
+
+<!-- Property -->
+<div class="form-row">
+  <label for="node-input-msgproperty">
+    <i class="fa fa-ellipsis-h"></i>
+    Status
+  </label>
+  <div style="display: inline-block; width: 10%;">
+    msg.
   </div>
-  <div class="form-row">
-    <label for="node-input-bluelinky"><i class="icon-tag"></i> Config</label>
-    <input type="text" id="node-input-bluelinky" placeholder="Name" />
+  <input type="text"
+         style="width: 60% !important;"
+         autocomplete="off"
+         id="node-input-msgproperty" />
+</div>
+
+<!-- Error Property -->
+<div class="form-row">
+  <label for="node-input-errorproperty">
+    <i class="fa fa-ellipsis-h"></i>
+    Error
+  </label>
+  <div style="display: inline-block; width: 10%;">
+    msg.
   </div>
+  <input type="text"
+         style="width: 60% !important;"
+         autocomplete="off"
+         id="node-input-errorproperty" />
+</div>
+
+<!-- Bluelink Config -->
+<div class="form-row">
+  <label for="node-input-bluelinky"><i class="icon-tag"></i> Config</label>
+  <input type="text"
+         id="node-input-bluelinky"
+         placeholder="Name" />
+</div>
+</script>
+<script type="text/html"
+        data-help-name="unlock-car">
+  <p>Unlock the configured vehicle</p>
 </script>
 
-<script type="text/javascript">
-  RED.nodes.registerType('start-car', {
-    category: 'bluelinky',
-    color: '#3FADB5',
-    defaults: {
-      name: { value: 'Start car' },
-      bluelinky: { value: 'Bluelinky config', type: 'bluelinky' },
-    },
-    inputs: 1,
-    outputs: 1,
-    icon: 'bluelinky.png',
-    label: function () {
-      return this.name || 'start-car';
-    },
-  });
+<!-- Node Template: Lock Car -->
+<script type="text/html"
+        data-template-name="lock-car">
+<!-- Name -->
+<div class="form-row">
+  <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+  <input type="text"
+         id="node-input-name"
+         placeholder="Name" />
+</div>
+
+<!-- Send Error To Alt Ouput -->
+<div class="form-row">
+  <label></label>
+  <input type="checkbox"
+         style="display: inline-block; width: auto; vertical-align: top;"
+         id="node-input-senderrortoaltoutput" />
+  <label for="node-input-senderrortoaltoutput"
+         style="width: auto;"> Send error message to separate output </label>
+</div>
+
+<!-- Ignore If Pending -->
+<div class="form-row">
+  <label></label>
+  <input type="checkbox"
+         style="display: inline-block; width: auto; vertical-align: top;"
+         id="node-input-ignoremessageifpending" />
+  <label for="node-input-ignoremessageifpending"
+         style="width: auto;"> Ignore input while request is pending </label>
+</div>
+
+<!-- Timeout -->
+<div class="form-row">
+  <label for="node-input-timeoutamount">Timeout</label>
+  <input type="number"
+         style="text-align:end; width:70px !important"
+         autocomplete="off"
+         id="node-input-timeoutamount" />
+  <select id="node-input-timeoutunits"
+          style="width:140px !important">
+    <option value="s">Seconds</option>
+    <option value="m">Minutes</option>
+    <option value="h">Hours</option>
+  </select>
+</div>
+
+<!-- Property -->
+<div class="form-row">
+  <label for="node-input-msgproperty">
+    <i class="fa fa-ellipsis-h"></i>
+    Status
+  </label>
+  <div style="display: inline-block; width: 10%;">
+    msg.
+  </div>
+  <input type="text"
+         style="width: 60% !important;"
+         autocomplete="off"
+         id="node-input-msgproperty" />
+</div>
+
+<!-- Error Property -->
+<div class="form-row">
+  <label for="node-input-errorproperty">
+    <i class="fa fa-ellipsis-h"></i>
+    Error
+  </label>
+  <div style="display: inline-block; width: 10%;">
+    msg.
+  </div>
+  <input type="text"
+         style="width: 60% !important;"
+         autocomplete="off"
+         id="node-input-errorproperty" />
+</div>
+
+<!-- Bluelink Config -->
+<div class="form-row">
+  <label for="node-input-bluelinky"><i class="icon-tag"></i> Config</label>
+  <input type="text"
+         id="node-input-bluelinky"
+         placeholder="Name" />
+</div>
+</script>
+<script type="text/html"
+        data-help-name="lock-car">
+  <p>Lock the configured vehicle</p>
 </script>
 
-<script type="text/javascript">
-  RED.nodes.registerType('stop-car', {
-    category: 'bluelinky',
-    color: '#3FADB5',
-    defaults: {
-      name: { value: 'Stop car' },
-      bluelinky: { value: 'Bluelinky config', type: 'bluelinky' },
-    },
-    inputs: 1,
-    outputs: 1,
-    icon: 'bluelinky.png',
-    label: function () {
-      return this.name || 'stop-car';
-    },
-  });
-</script>
-
-<script type="text/javascript">
-  RED.nodes.registerType('unlock-car', {
-    category: 'bluelinky',
-    color: '#3FADB5',
-    defaults: {
-      name: { value: 'Unlock car' },
-      bluelinky: { value: 'Bluelinky config', type: 'bluelinky' },
-    },
-    inputs: 1,
-    outputs: 1,
-    icon: 'bluelinky.png',
-    label: function () {
-      return this.name || 'unlock-car';
-    },
-  });
-</script>
-
-<script type="text/javascript">
-  RED.nodes.registerType('lock-car', {
-    category: 'bluelinky',
-    color: '#3FADB5',
-    defaults: {
-      name: { value: 'Lock car' },
-      bluelinky: { value: 'Bluelinky config', type: 'bluelinky' },
-    },
-    inputs: 1,
-    outputs: 1,
-    icon: 'bluelinky.png',
-    label: function () {
-      return this.name || 'lock-car';
-    },
-  });
-</script>
-
-<script type="text/javascript">
-  RED.nodes.registerType('start-charge', {
-    category: 'bluelinky',
-    color: '#3FADB5',
-    defaults: {
-      name: { value: 'Start Charging' },
-      bluelinky: { value: 'Bluelinky config', type: 'bluelinky' },
-    },
-    inputs: 1,
-    outputs: 1,
-    icon: 'bluelinky.png',
-    label: function () {
-      return this.name || 'start-charge';
-    },
-  });
-</script>
-
-<script type="text/javascript">
-  RED.nodes.registerType('stop-charge', {
-    category: 'bluelinky',
-    color: '#3FADB5',
-    defaults: {
-      name: { value: 'Stop Charging' },
-      bluelinky: { value: 'Bluelinky config', type: 'bluelinky' },
-    },
-    inputs: 1,
-    outputs: 1,
-    icon: 'bluelinky.png',
-    label: function () {
-      return this.name || 'stop-charge';
-    },
-  });
-</script>
-
-<script type="text/javascript">
-  RED.nodes.registerType('login', {
-    category: 'bluelinky',
-    color: '#3FADB5',
-    defaults: {
-      name: { value: 'Login' },
-      bluelinky: { value: 'Bluelinky config', type: 'bluelinky' },
-    },
-    inputs: 1,
-    outputs: 1,
-    icon: 'bluelinky.png',
-    label: function () {
-      return this.name || 'login';
-    },
-  });
-</script>
-
-<script type="text/javascript">
-  RED.nodes.registerType('bluelinky', {
-    category: 'config',
-    defaults: {
-      username: { required: true },
-      password: { required: true },
-      region: { value: 'EU', required: true },
-      pin: { required: true, validate: RED.validators.number() },
-      vin: { required: true },
-      brand: { value: 'hyundai', required: true },
-    },
-    label: function () {
-      return this.vin;
-    },
-  });
-</script>
-
-
+<!-- Node Template: Start Car -->
 <script type="text/html"
         data-template-name="start-car">
-  <div class="form-row">
-    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
-    <input type="text" id="node-input-name" placeholder="Name" />
-  </div>
-  <div class="form-row">
-    <label for="node-input-bluelinky"><i class="icon-tag"></i> Config</label>
-    <input type="text" id="node-input-bluelinky" placeholder="Name" />
-  </div>
-</script>
+<!-- Name -->
+<div class="form-row">
+  <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+  <input type="text"
+         id="node-input-name"
+         placeholder="Name" />
+</div>
 
+<!-- Send Error To Alt Ouput -->
+<div class="form-row">
+  <label></label>
+  <input type="checkbox"
+         style="display: inline-block; width: auto; vertical-align: top;"
+         id="node-input-senderrortoaltoutput" />
+  <label for="node-input-senderrortoaltoutput"
+         style="width: auto;"> Send error message to separate output </label>
+</div>
+
+<!-- Ignore If Pending -->
+<div class="form-row">
+  <label></label>
+  <input type="checkbox"
+         style="display: inline-block; width: auto; vertical-align: top;"
+         id="node-input-ignoremessageifpending" />
+  <label for="node-input-ignoremessageifpending"
+         style="width: auto;"> Ignore input while request is pending </label>
+</div>
+
+<!-- Timeout -->
+<div class="form-row">
+  <label for="node-input-timeoutamount">Timeout</label>
+  <input type="number"
+         style="text-align:end; width:70px !important"
+         autocomplete="off"
+         id="node-input-timeoutamount" />
+  <select id="node-input-timeoutunits"
+          style="width:140px !important">
+    <option value="s">Seconds</option>
+    <option value="m">Minutes</option>
+    <option value="h">Hours</option>
+  </select>
+</div>
+
+<!-- Property -->
+<div class="form-row">
+  <label for="node-input-msgproperty">
+    <i class="fa fa-ellipsis-h"></i>
+    Status
+  </label>
+  <div style="display: inline-block; width: 10%;">
+    msg.
+  </div>
+  <input type="text"
+         style="width: 60% !important;"
+         autocomplete="off"
+         id="node-input-msgproperty" />
+</div>
+
+<!-- Error Property -->
+<div class="form-row">
+  <label for="node-input-errorproperty">
+    <i class="fa fa-ellipsis-h"></i>
+    Error
+  </label>
+  <div style="display: inline-block; width: 10%;">
+    msg.
+  </div>
+  <input type="text"
+         style="width: 60% !important;"
+         autocomplete="off"
+         id="node-input-errorproperty" />
+</div>
+
+<!-- Bluelink Config -->
+<div class="form-row">
+  <label for="node-input-bluelinky"><i class="icon-tag"></i> Config</label>
+  <input type="text"
+         id="node-input-bluelinky"
+         placeholder="Name" />
+</div>
+</script>
 <script type="text/html"
         data-help-name="start-car">
   <p>For ICE (Internal combustion engine) cars:</p>
@@ -670,18 +808,90 @@
   >
 </script>
 
+<!-- Node Template: Stop Car -->
 <script type="text/html"
         data-template-name="stop-car">
-  <div class="form-row">
-    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
-    <input type="text" id="node-input-name" placeholder="Name" />
-  </div>
-  <div class="form-row">
-    <label for="node-input-bluelinky"><i class="icon-tag"></i> Config</label>
-    <input type="text" id="node-input-bluelinky" placeholder="Name" />
-  </div>
-</script>
+<!-- Name -->
+<div class="form-row">
+  <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+  <input type="text"
+         id="node-input-name"
+         placeholder="Name" />
+</div>
 
+<!-- Send Error To Alt Ouput -->
+<div class="form-row">
+  <label></label>
+  <input type="checkbox"
+         style="display: inline-block; width: auto; vertical-align: top;"
+         id="node-input-senderrortoaltoutput" />
+  <label for="node-input-senderrortoaltoutput"
+         style="width: auto;"> Send error message to separate output </label>
+</div>
+
+<!-- Ignore If Pending -->
+<div class="form-row">
+  <label></label>
+  <input type="checkbox"
+         style="display: inline-block; width: auto; vertical-align: top;"
+         id="node-input-ignoremessageifpending" />
+  <label for="node-input-ignoremessageifpending"
+         style="width: auto;"> Ignore input while request is pending </label>
+</div>
+
+<!-- Timeout -->
+<div class="form-row">
+  <label for="node-input-timeoutamount">Timeout</label>
+  <input type="number"
+         style="text-align:end; width:70px !important"
+         autocomplete="off"
+         id="node-input-timeoutamount" />
+  <select id="node-input-timeoutunits"
+          style="width:140px !important">
+    <option value="s">Seconds</option>
+    <option value="m">Minutes</option>
+    <option value="h">Hours</option>
+  </select>
+</div>
+
+<!-- Property -->
+<div class="form-row">
+  <label for="node-input-msgproperty">
+    <i class="fa fa-ellipsis-h"></i>
+    Status
+  </label>
+  <div style="display: inline-block; width: 10%;">
+    msg.
+  </div>
+  <input type="text"
+         style="width: 60% !important;"
+         autocomplete="off"
+         id="node-input-msgproperty" />
+</div>
+
+<!-- Error Property -->
+<div class="form-row">
+  <label for="node-input-errorproperty">
+    <i class="fa fa-ellipsis-h"></i>
+    Error
+  </label>
+  <div style="display: inline-block; width: 10%;">
+    msg.
+  </div>
+  <input type="text"
+         style="width: 60% !important;"
+         autocomplete="off"
+         id="node-input-errorproperty" />
+</div>
+
+<!-- Bluelink Config -->
+<div class="form-row">
+  <label for="node-input-bluelinky"><i class="icon-tag"></i> Config</label>
+  <input type="text"
+         id="node-input-bluelinky"
+         placeholder="Name" />
+</div>
+</script>
 <script type="text/html"
         data-help-name="stop-car">
   <p>For ICE (Internal combustion engine) cars:</p>
@@ -695,76 +905,274 @@
   <p></p>
 </script>
 
+<!-- Node Template: Start Charge -->
+<script type="text/html"
+        data-template-name="start-charge">
+<!-- Name -->
+<div class="form-row">
+  <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+  <input type="text"
+         id="node-input-name"
+         placeholder="Name" />
+</div>
 
+<!-- Send Error To Alt Ouput -->
+<div class="form-row">
+  <label></label>
+  <input type="checkbox"
+         style="display: inline-block; width: auto; vertical-align: top;"
+         id="node-input-senderrortoaltoutput" />
+  <label for="node-input-senderrortoaltoutput"
+         style="width: auto;"> Send error message to separate output </label>
+</div>
+
+<!-- Ignore If Pending -->
+<div class="form-row">
+  <label></label>
+  <input type="checkbox"
+         style="display: inline-block; width: auto; vertical-align: top;"
+         id="node-input-ignoremessageifpending" />
+  <label for="node-input-ignoremessageifpending"
+         style="width: auto;"> Ignore input while request is pending </label>
+</div>
+
+<!-- Timeout -->
+<div class="form-row">
+  <label for="node-input-timeoutamount">Timeout</label>
+  <input type="number"
+         style="text-align:end; width:70px !important"
+         autocomplete="off"
+         id="node-input-timeoutamount" />
+  <select id="node-input-timeoutunits"
+          style="width:140px !important">
+    <option value="s">Seconds</option>
+    <option value="m">Minutes</option>
+    <option value="h">Hours</option>
+  </select>
+</div>
+
+<!-- Property -->
+<div class="form-row">
+  <label for="node-input-msgproperty">
+    <i class="fa fa-ellipsis-h"></i>
+    Status
+  </label>
+  <div style="display: inline-block; width: 10%;">
+    msg.
+  </div>
+  <input type="text"
+         style="width: 60% !important;"
+         autocomplete="off"
+         id="node-input-msgproperty" />
+</div>
+
+<!-- Error Property -->
+<div class="form-row">
+  <label for="node-input-errorproperty">
+    <i class="fa fa-ellipsis-h"></i>
+    Error
+  </label>
+  <div style="display: inline-block; width: 10%;">
+    msg.
+  </div>
+  <input type="text"
+         style="width: 60% !important;"
+         autocomplete="off"
+         id="node-input-errorproperty" />
+</div>
+
+<!-- Bluelink Config -->
+<div class="form-row">
+  <label for="node-input-bluelinky"><i class="icon-tag"></i> Config</label>
+  <input type="text"
+         id="node-input-bluelinky"
+         placeholder="Name" />
+</div>
+</script>
 <script type="text/html"
         data-help-name="start-charge">
   <p>Starts charging the configured vehicle</p>
 </script>
 
+<!-- Node Template: Stop Charge -->
 <script type="text/html"
         data-template-name="stop-charge">
-  <div class="form-row">
-    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
-    <input type="text" id="node-input-name" placeholder="Name" />
-  </div>
-  <div class="form-row">
-    <label for="node-input-bluelinky"><i class="icon-tag"></i> Config</label>
-    <input type="text" id="node-input-bluelinky" placeholder="Name" />
-  </div>
-</script>
+<!-- Name -->
+<div class="form-row">
+  <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+  <input type="text"
+         id="node-input-name"
+         placeholder="Name" />
+</div>
 
+<!-- Send Error To Alt Ouput -->
+<div class="form-row">
+  <label></label>
+  <input type="checkbox"
+         style="display: inline-block; width: auto; vertical-align: top;"
+         id="node-input-senderrortoaltoutput" />
+  <label for="node-input-senderrortoaltoutput"
+         style="width: auto;"> Send error message to separate output </label>
+</div>
+
+<!-- Ignore If Pending -->
+<div class="form-row">
+  <label></label>
+  <input type="checkbox"
+         style="display: inline-block; width: auto; vertical-align: top;"
+         id="node-input-ignoremessageifpending" />
+  <label for="node-input-ignoremessageifpending"
+         style="width: auto;"> Ignore input while request is pending </label>
+</div>
+
+<!-- Timeout -->
+<div class="form-row">
+  <label for="node-input-timeoutamount">Timeout</label>
+  <input type="number"
+         style="text-align:end; width:70px !important"
+         autocomplete="off"
+         id="node-input-timeoutamount" />
+  <select id="node-input-timeoutunits"
+          style="width:140px !important">
+    <option value="s">Seconds</option>
+    <option value="m">Minutes</option>
+    <option value="h">Hours</option>
+  </select>
+</div>
+
+<!-- Property -->
+<div class="form-row">
+  <label for="node-input-msgproperty">
+    <i class="fa fa-ellipsis-h"></i>
+    Status
+  </label>
+  <div style="display: inline-block; width: 10%;">
+    msg.
+  </div>
+  <input type="text"
+         style="width: 60% !important;"
+         autocomplete="off"
+         id="node-input-msgproperty" />
+</div>
+
+<!-- Error Property -->
+<div class="form-row">
+  <label for="node-input-errorproperty">
+    <i class="fa fa-ellipsis-h"></i>
+    Error
+  </label>
+  <div style="display: inline-block; width: 10%;">
+    msg.
+  </div>
+  <input type="text"
+         style="width: 60% !important;"
+         autocomplete="off"
+         id="node-input-errorproperty" />
+</div>
+
+<!-- Bluelink Config -->
+<div class="form-row">
+  <label for="node-input-bluelinky"><i class="icon-tag"></i> Config</label>
+  <input type="text"
+         id="node-input-bluelinky"
+         placeholder="Name" />
+</div>
+</script>
 <script type="text/html"
         data-help-name="stop-charge">
   <p>Stops charging the configured vehicle</p>
 </script>
 
+<!-- Node Template: Login -->
+<script type="text/html"
+        data-template-name="login">
+<!-- Name -->
+<div class="form-row">
+  <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+  <input type="text"
+         id="node-input-name"
+         placeholder="Name" />
+</div>
+
+<!-- Send Error To Alt Ouput -->
+<div class="form-row">
+  <label></label>
+  <input type="checkbox"
+         style="display: inline-block; width: auto; vertical-align: top;"
+         id="node-input-senderrortoaltoutput" />
+  <label for="node-input-senderrortoaltoutput"
+         style="width: auto;"> Send error message to separate output </label>
+</div>
+
+<!-- Ignore If Pending -->
+<div class="form-row">
+  <label></label>
+  <input type="checkbox"
+         style="display: inline-block; width: auto; vertical-align: top;"
+         id="node-input-ignoremessageifpending" />
+  <label for="node-input-ignoremessageifpending"
+         style="width: auto;"> Ignore input while request is pending </label>
+</div>
+
+<!-- Timeout -->
+<div class="form-row">
+  <label for="node-input-timeoutamount">Timeout</label>
+  <input type="number"
+         style="text-align:end; width:70px !important"
+         autocomplete="off"
+         id="node-input-timeoutamount" />
+  <select id="node-input-timeoutunits"
+          style="width:140px !important">
+    <option value="s">Seconds</option>
+    <option value="m">Minutes</option>
+    <option value="h">Hours</option>
+  </select>
+</div>
+
+<!-- Property -->
+<div class="form-row">
+  <label for="node-input-msgproperty">
+    <i class="fa fa-ellipsis-h"></i>
+    Status
+  </label>
+  <div style="display: inline-block; width: 10%;">
+    msg.
+  </div>
+  <input type="text"
+         style="width: 60% !important;"
+         autocomplete="off"
+         id="node-input-msgproperty" />
+</div>
+
+<!-- Error Property -->
+<div class="form-row">
+  <label for="node-input-errorproperty">
+    <i class="fa fa-ellipsis-h"></i>
+    Error
+  </label>
+  <div style="display: inline-block; width: 10%;">
+    msg.
+  </div>
+  <input type="text"
+         style="width: 60% !important;"
+         autocomplete="off"
+         id="node-input-errorproperty" />
+</div>
+
+<!-- Bluelink Config -->
+<div class="form-row">
+  <label for="node-input-bluelinky"><i class="icon-tag"></i> Config</label>
+  <input type="text"
+         id="node-input-bluelinky"
+         placeholder="Name" />
+</div>
+</script>
 <script type="text/html"
         data-help-name="login">
   <p>Forces bluelinky to login again</p>
 </script>
 
-<script type="text/html"
-        data-template-name="login">
-  <div class="form-row">
-    <label for="node-input-bluelinky"><i class="icon-tag"></i> Config</label>
-    <input type="text" id="node-input-bluelinky" placeholder="Name" />
-  </div>
-</script>
-
-<script type="text/html"
-        data-template-name="unlock-car">
-  <div class="form-row">
-    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
-    <input type="text" id="node-input-name" placeholder="Name" />
-  </div>
-  <div class="form-row">
-    <label for="node-input-bluelinky"><i class="icon-tag"></i> Config</label>
-    <input type="text" id="node-input-bluelinky" placeholder="Name" />
-  </div>
-</script>
-
-<script type="text/html"
-        data-help-name="unlock-car">
-  <p>Unlock the configured vehicle</p>
-</script>
-
-<script type="text/html"
-        data-template-name="lock-car">
-  <div class="form-row">
-    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
-    <input type="text" id="node-input-name" placeholder="Name" />
-  </div>
-  <div class="form-row">
-    <label for="node-input-bluelinky"><i class="icon-tag"></i> Config</label>
-    <input type="text" id="node-input-bluelinky" placeholder="Name" />
-  </div>
-</script>
-
-<script type="text/html"
-        data-help-name="lock-car">
-  <p>Lock the configured vehicle</p>
-</script>
-
+<!-- Node Template: Bluelinky Config -->
 <script type="text/html"
         data-template-name="bluelinky">
   <div class="form-row">
