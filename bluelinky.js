@@ -47,6 +47,16 @@ module.exports = function (RED) {
       errorproperty: { value: 'payload' },
       senderrortoaltoutput: { value: false },
       ignoremessageifpending: { value: true },
+    },
+    Odometer: {
+      name: { value: 'Get car odometer' },
+      bluelinky: { value: 'Bluelinky config', type: 'bluelinky' },
+      timeoutamount: { value: 0 },
+      timeoutunits: { value: 's' },
+      msgproperty: { value: 'payload' },
+      errorproperty: { value: 'payload' },
+      senderrortoaltoutput: { value: false },
+      ignoremessageifpending: { value: true },
     }
   };
 
@@ -201,6 +211,19 @@ module.exports = function (RED) {
     );
   }
 
+  /**
+   * 
+   * @param {CommonConfig} config 
+   */
+  function Odometer(config) {
+    createAPINode(
+      this,
+      config,
+      defaultConfigs.Odometer,
+      (vehicle) => vehicle.odometer()
+    );
+  }
+
   function Unlock(config) {
     RED.nodes.createNode(this, config);
     this.bluelinkyConfig = RED.nodes.getNode(config.bluelinky);
@@ -318,38 +341,6 @@ module.exports = function (RED) {
         const car = await client.getVehicle(this.bluelinkyConfig.vin);
         this.status(this.bluelinkyConfig.status);
         const result = await car.location();
-        node.send({
-          payload: result,
-        });
-      } catch (err) {
-        node.send({
-          payload: err,
-        });
-      }
-    });
-  }
-
-  function Odometer(config) {
-    RED.nodes.createNode(this, config);
-    this.bluelinkyConfig = RED.nodes.getNode(config.bluelinky);
-    this.status(this.bluelinkyConfig.status);
-    this.connected = false;
-    const node = this;
-
-    State.on('changed', (statusObject) => {
-      this.status(statusObject);
-      if (statusObject.text === 'Ready') {
-        this.connected = true;
-      }
-    });
-    node.on('input', async function (msg) {
-      try {
-        if (!this.connected) {
-          return null;
-        }
-        await client.getVehicles();
-        const car = await client.getVehicle(this.bluelinkyConfig.vin);
-        const result = await car.odometer();
         node.send({
           payload: result,
         });

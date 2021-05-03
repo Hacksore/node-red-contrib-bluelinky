@@ -25,6 +25,16 @@
         errorproperty: { value: 'payload' },
         senderrortoaltoutput: { value: false },
         ignoremessageifpending: { value: true },
+      },
+      Odometer: {
+        name: { value: 'Get car odometer' },
+        bluelinky: { value: 'Bluelinky config', type: 'bluelinky' },
+        timeoutamount: { value: 0 },
+        timeoutunits: { value: 's' },
+        msgproperty: { value: 'payload' },
+        errorproperty: { value: 'payload' },
+        senderrortoaltoutput: { value: false },
+        ignoremessageifpending: { value: true },
       }
     };
 
@@ -65,6 +75,7 @@
     // Register the nodes
     registerBluelinkyNode('car-status', defaultConfigs.GetVehicleStatus);
     registerBluelinkyNode('car-fullstatus', defaultConfigs.GetFullVehicleStatus);
+    registerBluelinkyNode('car-odometer', defaultConfigs.Odometer);
 
   };
 
@@ -279,6 +290,108 @@
   <p>Get the full status of the configured vehicle, always unparsed</p>
 </script>
 
+<!-- Node Template: Odometer -->
+<script type="text/html"
+        data-template-name="car-odometer">
+
+  <!-- Name -->
+<div class="form-row">
+  <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+  <input type="text"
+         id="node-input-name"
+         placeholder="Name" />
+</div>
+
+<!-- Send Error To Alt Ouput -->
+<div class="form-row">
+  <label></label>
+  <input type="checkbox"
+         style="display: inline-block; width: auto; vertical-align: top;"
+         id="node-input-senderrortoaltoutput" />
+  <label for="node-input-senderrortoaltoutput"
+         style="width: auto;"> Send error message to separate output </label>
+</div>
+
+<!-- Ignore If Pending -->
+<div class="form-row">
+  <label></label>
+  <input type="checkbox"
+         style="display: inline-block; width: auto; vertical-align: top;"
+         id="node-input-ignoremessageifpending" />
+  <label for="node-input-ignoremessageifpending"
+         style="width: auto;"> Ignore input while request is pending </label>
+</div>
+
+<!-- Timeout -->
+<div class="form-row">
+  <label for="node-input-timeoutamount">Timeout</label>
+  <input type="number"
+         style="text-align:end; width:70px !important"
+         autocomplete="off"
+         id="node-input-timeoutamount" />
+  <select id="node-input-timeoutunits"
+          style="width:140px !important">
+    <option value="s">Seconds</option>
+    <option value="m">Minutes</option>
+    <option value="h">Hours</option>
+  </select>
+</div>
+
+<!-- Property -->
+<div class="form-row">
+  <label for="node-input-msgproperty">
+    <i class="fa fa-ellipsis-h"></i>
+    Status
+  </label>
+  <div style="display: inline-block; width: 10%;">
+    msg.
+  </div>
+  <input type="text"
+         style="width: 60% !important;"
+         autocomplete="off"
+         id="node-input-msgproperty" />
+</div>
+
+<!-- Error Property -->
+<div class="form-row">
+  <label for="node-input-errorproperty">
+    <i class="fa fa-ellipsis-h"></i>
+    Error
+  </label>
+  <div style="display: inline-block; width: 10%;">
+    msg.
+  </div>
+  <input type="text"
+         style="width: 60% !important;"
+         autocomplete="off"
+         id="node-input-errorproperty" />
+</div>
+
+<!-- Bluelink Config -->
+<div class="form-row">
+  <label for="node-input-bluelinky"><i class="icon-tag"></i> Config</label>
+  <input type="text"
+         id="node-input-bluelinky"
+         placeholder="Name" />
+</div>
+</script>
+<script type="text/html"
+        data-help-name="car-odometer">
+  <p>Get the odometer of the configured vehicle</p>
+</script>
+
+<script type="text/html"
+        data-template-name="start-charge">
+  <div class="form-row">
+    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name" />
+  </div>
+  <div class="form-row">
+    <label for="node-input-bluelinky"><i class="icon-tag"></i> Config</label>
+    <input type="text" id="node-input-bluelinky" placeholder="Name" />
+  </div>
+</script>
+
 <script type="text/javascript">
   RED.nodes.registerType('start-car', {
     category: 'bluelinky',
@@ -309,23 +422,6 @@
     icon: 'bluelinky.png',
     label: function () {
       return this.name || 'stop-car';
-    },
-  });
-</script>
-
-<script type="text/javascript">
-  RED.nodes.registerType('car-odometer', {
-    category: 'bluelinky',
-    color: '#3FADB5',
-    defaults: {
-      name: { value: 'Get car odometer' },
-      bluelinky: { value: 'Bluelinky config', type: 'bluelinky' },
-    },
-    inputs: 1,
-    outputs: 1,
-    icon: 'bluelinky.png',
-    label: function () {
-      return this.name || 'car-odometer';
     },
   });
 </script>
@@ -534,34 +630,6 @@
   <p>Get the location of the configured vehicle</p>
 </script>
 
-<script type="text/html"
-        data-template-name="car-odometer">
-  <div class="form-row">
-    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
-    <input type="text" id="node-input-name" placeholder="Name" />
-  </div>
-  <div class="form-row">
-    <label for="node-input-bluelinky"><i class="icon-tag"></i> Config</label>
-    <input type="text" id="node-input-bluelinky" placeholder="Name" />
-  </div>
-</script>
-
-<script type="text/html"
-        data-help-name="car-odometer">
-  <p>Get the odometer of the configured vehicle</p>
-</script>
-
-<script type="text/html"
-        data-template-name="start-charge">
-  <div class="form-row">
-    <label for="node-input-name"><i class="icon-tag"></i> Name</label>
-    <input type="text" id="node-input-name" placeholder="Name" />
-  </div>
-  <div class="form-row">
-    <label for="node-input-bluelinky"><i class="icon-tag"></i> Config</label>
-    <input type="text" id="node-input-bluelinky" placeholder="Name" />
-  </div>
-</script>
 
 <script type="text/html"
         data-help-name="start-charge">
