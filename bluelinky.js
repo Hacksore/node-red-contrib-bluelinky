@@ -2,7 +2,7 @@ const BlueLinky = require('bluelinky');
 
 /**
  * 
- * @param {import('@node-red/registry').NodeAPI} RED 
+ * @param {NodeRedAPI} RED 
  */
 module.exports = function (RED) {
   /**
@@ -21,7 +21,7 @@ module.exports = function (RED) {
   const defaultConfigs = {
     GetVehicleStatus: {
       ...commonDefaults,
-      name: { value: 'Get full status' },
+      name: { value: 'Get status' },
       dorefresh: { value: true },
       parsed: { value: false },
     },
@@ -48,7 +48,8 @@ module.exports = function (RED) {
     },
     StartCar: {
       ...commonDefaults,
-      name: { value: 'Start car' }
+      name: { value: 'Start car' },
+      cfgproperty: { value: 'payload' }
     },
     StopCar: {
       ...commonDefaults,
@@ -144,7 +145,7 @@ module.exports = function (RED) {
 
       // Set the message and status
       node.status({ fill: 'green', shape: 'ring', text: `Request finished at ${(new Date()).toLocaleString()}` });
-      const msgProperty = (config.msgproperty || '').trim() || 'payload';
+      const msgProperty = (config.msgproperty || '').trim() || commonDefaults.msgproperty.value;
       var msg = { [msgProperty]: requestResult };
 
       return [msg, undefined];
@@ -152,7 +153,7 @@ module.exports = function (RED) {
     } catch (error) {
       // Set the message and status
       node.status({ fill: 'red', shape: 'ring', text: `Error at ${(new Date()).toLocaleString()}` });
-      const errorProperty = (config.errorproperty || '').trim() || 'payload';
+      const errorProperty = (config.errorproperty || '').trim() || commonDefaults.errorproperty.value;
       var msg = { [errorProperty]: error };
 
       if (config.senderrortoaltoutput) {
@@ -212,6 +213,10 @@ module.exports = function (RED) {
       // Clear the pending request
       pendingRequest$ = undefined;
 
+      // Store the output
+      node.context().set('lastOutput', outputs);
+      node.context().set('lastOutputTimestamp', Number(new Date()));
+
       // Merge with the original message & send
       node.send(outputs.map(
         (output) => output ? Object.assign(msg, output) : undefined)
@@ -260,7 +265,7 @@ module.exports = function (RED) {
 
   /**
    * 
-   * @param {GetFullVehicleStatusConfig} config 
+   * @param {VehicleStatusConfig} config 
    */
   function GetFullVehicleStatus(config) {
     createVehicleAPIFlowNode(
@@ -327,14 +332,19 @@ module.exports = function (RED) {
 
   /**
    * 
-   * @param {CommonConfig} config 
+   * @param {StartCarConfig} config 
    */
   function Start(config) {
     createVehicleAPIFlowNode(
       this,
       config,
       defaultConfigs.StartCar,
-      async (vehicle, msg) => vehicle.start(msg.payload)
+      async (vehicle, msg) => {
+        // Get config property
+        const cfgProperty = (config.cfgproperty || '').trim() || defaultConfigs.StartCar.cfgproperty.value;
+
+        return vehicle.start(msg[cfgProperty]);
+      }
     );
   }
 
@@ -522,12 +532,17 @@ module.exports = function (RED) {
 };
 
 // #region Typedefs
+
 /**
- * @typedef {import('bluelinky/dist/vehicles/vehicle').Vehicle} Vehicle
+ * @typedef {import('@node-red/registry').NodeAPI} NodeRedAPI
  */
 
 /**
  * @typedef {import('@node-red/registry').Node} Node
+ */
+
+/**
+ * @typedef {import('bluelinky/dist/vehicles/vehicle').Vehicle} Vehicle
  */
 
 /**
@@ -567,7 +582,7 @@ module.exports = function (RED) {
  */
 
 /**
- * @typedef {VehicleStatusConfig} GetFullVehicleStatusConfig
+ * @typedef {CommonConfig & {cfgproperty:string}} StartCarConfig
  */
 
 /**

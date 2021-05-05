@@ -15,7 +15,7 @@
     const defaultConfigs = {
       GetVehicleStatus: {
         ...commonDefaults,
-        name: { value: 'Get full status' },
+        name: { value: 'Get status' },
         dorefresh: { value: true },
         parsed: { value: false },
       },
@@ -42,7 +42,8 @@
       },
       StartCar: {
         ...commonDefaults,
-        name: { value: 'Start car' }
+        name: { value: 'Start car' },
+        cfgproperty: { value: 'payload' }
       },
       StopCar: {
         ...commonDefaults,
@@ -740,6 +741,21 @@
   </select>
 </div>
 
+<!-- Config Property -->
+<div class="form-row">
+  <label for="node-input-cfgproperty">
+    <i class="fa fa-ellipsis-h"></i>
+    Options
+  </label>
+  <div style="display: inline-block; width: 10%;">
+    msg.
+  </div>
+  <input type="text"
+         style="width: 60% !important;"
+         autocomplete="off"
+         id="node-input-cfgproperty" />
+</div>
+
 <!-- Property -->
 <div class="form-row">
   <label for="node-input-msgproperty">
@@ -791,8 +807,24 @@
             defrost?: boolean | string;
             heating1?: boolean | string;
         }
-    </pre
-  >
+    </pre>
+    <ul>
+      <li>
+        igniOnDuration: How long to run (1 to 10)
+      </li>
+      <li>
+        airCtrl: Turn on the HVAC
+      </li>
+      <li>
+        airTempvalue: Temperature in Fahrenheit
+      </li>
+      <li>
+        defrost: Turn on defrosters, side mirrors, etc
+      </li>
+      <li>
+        heating1: yes (EU)
+      </li>
+    </ul>
   <br />
   <p>For EVs:</p>
   <p>Starts your climate, required config as msg.payload:</p>
