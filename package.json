@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-bluelinky",
-  "version": "0.0.21",
+  "version": "0.0.3",
   "description": "A Node Red Library for BlueLinky, a Hyundai and Kia 3rd-party wrapper",
   "main": "bluelinky.js",
   "scripts": {
@@ -25,7 +25,8 @@
   },
   "author": "Sondre Tungesvik Njåstad",
   "contributors": [
-    "Sean Boult"
+    "Sean Boult",
+    "Chris McGhee"
   ],
   "license": "ISC",
   "bugs": {
