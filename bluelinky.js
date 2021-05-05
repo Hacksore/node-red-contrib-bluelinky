@@ -513,7 +513,12 @@ module.exports = function (RED) {
       this.client.login();
     };
 
-    // TODO: When node is destroyed, reject login promise if pending
+    // If the config node is closed/destroyed, reject any pending login promise
+    this.on('close', () => {
+      if (!deferedLoginPromise.settled) {
+        deferedLoginPromise.reject('Configuration Node Closed');
+      }
+    });
   }
 
 
