@@ -4,7 +4,7 @@ A node-red flow for controlling Hyundai BlueLink vehicles powered by [bluelinky]
 [![npm](https://img.shields.io/npm/v/node-red-contrib-bluelinky.svg)](https://www.npmjs.com/package/bluelinky)
 [![Discord](https://img.shields.io/discord/652755205041029120)](https://discord.gg/HwnG8sY)
 
-![Sample](docs\sample.jpg?raw=true)
+![Sample](https://github.com/Nividica/node-red-contrib-bluelinky/blob/dev.nividica/docs/sample.jpg?raw=true)
 
 ## Supported Features
 - Lock
@@ -33,17 +33,17 @@ Example:
 npm_packages:
   - node-red-contrib-bluelinky
 ```
-![Install via Node Red Config](docs\install.hassos.jpg?raw=true)
+![Install via Node Red Config](https://github.com/Nividica/node-red-contrib-bluelinky/blob/dev.nividica/docs/install.hassos.jpg?raw=true)
 
 
 ## Documentation
-*Jump down to the Quick Start section if you are in a hurry :)*
+*Jump down to the Quick Start section if you can't wait to play :)*
 
 Checkout out the [bluelinky-docs](https://hacksore.github.io/bluelinky-docs/) for more info about how the bluelinky api works.
 
 Once installed you should see the addition of bluelinky nodes in the node drawer:
 
-![Bluelinky Nodes](docs\new.nodes.jpg?raw=true)
+![Bluelinky Nodes](https://github.com/Nividica/node-red-contrib-bluelinky/blob/dev.nividica/docs/new.nodes.jpg?raw=true)
 
 Each of these nodes will perform their specified action when they receive any input message if they have a valid bluelinky configuration set.
 
@@ -52,7 +52,7 @@ Once you drag one out to a flow, they will have two outputs. The top output is t
 ### Node Configuration
 All node share the same base set of configuration options:
 
-![Common Configuration Settings](docs\common.config.jpg?raw=true)
+![Common Configuration Settings](https://github.com/Nividica/node-red-contrib-bluelinky/blob/dev.nividica/docs/common.config.jpg?raw=true)
 
 * Send error message to separate output
   * Enabled: This will send any error messages to the bottom output, instead of the top output
@@ -80,7 +80,7 @@ Additional options
   * Controls the msg property which will be used for the [start options](https://hacksore.github.io/bluelinky-docs/docs/api-reference#start)
 
 ### Node Status Indicators
-![Node Status](docs\node.status.jpg?raw=true)
+![Node Status](https://github.com/Nividica/node-red-contrib-bluelinky/blob/dev.nividica/docs/node.status.jpg?raw=true)
 * `Awaiting Login...` The node wants to make a request, but is waiting for the shared configuration to complete it's login
 * `Request sent...` The request has been handed off to Bluelinky
 * `Request finished at` A request successfully completed at the specified time
@@ -90,7 +90,7 @@ Additional options
 
 * Start by dragging the `car - status` node into the flow, then double click the node to open the node editor.
 * Next click the pencil icon to the right of `Config | Add new bluelinky...`
-![Bluelinky Config Node](docs\bluelinky.config.jpg?raw=true)
+![Bluelinky Config Node](https://github.com/Nividica/node-red-contrib-bluelinky/blob/dev.nividica/docs/bluelinky.config.jpg?raw=true)
 * Enter in all of the required information and click the `Add` button to return to the node editor.
   * Note that this is a shared configuration and can be used by other Bluelinky nodes.
 * Leave all other fields in the node editor to their defaults, and click the `Done` button to return to the flow.
@@ -103,7 +103,7 @@ Additional options
 * Click the inject button
 
 If everything is setup correctly the status node should say `Request sent...` then a few moments later you should see the result in the debug tab, and the status node should report success or failure
-![Quick Start Flow](docs\quickstart.flow.jpg?raw=true)
+![Quick Start Flow](https://github.com/Nividica/node-red-contrib-bluelinky/blob/dev.nividica/docs/quickstart.flow.jpg?raw=true)
 
 ## Troubleshooting
 Important information for login problems:
@@ -112,7 +112,7 @@ Important information for login problems:
 
 You can view the results of the last operation of any node by opening the context tab(right drawer), selecting the node in question, and clicking the small refresh icon to the right of `Node`
 
-![Node Context](docs\node.context.jpg?raw=true)
+![Node Context](https://github.com/Nividica/node-red-contrib-bluelinky/blob/dev.nividica/docs/node.context.jpg?raw=true)
 * lastOutput
   * An array showing what objects were appended to each output
   * [0] Is the main, top, output
